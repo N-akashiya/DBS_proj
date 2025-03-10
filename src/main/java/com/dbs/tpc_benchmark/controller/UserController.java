@@ -1,5 +1,6 @@
 package com.dbs.tpc_benchmark.controller;
 
+import com.dbs.tpc_benchmark.config.JWTutil;
 import com.dbs.tpc_benchmark.model.User;
 import com.dbs.tpc_benchmark.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,10 @@ public class UserController {
 
     @PostMapping("/login")
     public String loginUser(@RequestBody User user) {
+        String token = userService.loginUser(user);
+        if (token.equals("Login successful:)")) {
+            return JWTutil.generateToken(user);
+        }
         return userService.loginUser(user);
     }
 

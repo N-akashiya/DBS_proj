@@ -1,5 +1,7 @@
 package com.dbs.tpc_benchmark.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -7,8 +9,14 @@ import jakarta.persistence.*;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
+    @Column(unique = true, nullable = false)
     private String name;
+    
+    @JsonIgnore
+    @Column(nullable = false)
     private String password;
+    
     private String role;
     private String status;
 
