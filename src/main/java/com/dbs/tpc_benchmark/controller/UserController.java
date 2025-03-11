@@ -13,6 +13,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JWTutil jwtutil;
+
     @PostMapping("/register")
     public String registerUser(@RequestBody User user) {
         return userService.registerUser(user);
@@ -22,7 +25,7 @@ public class UserController {
     public String loginUser(@RequestBody User user) {
         String token = userService.loginUser(user);
         if (token.equals("Login successful:)")) {
-            return JWTutil.generateToken(user);
+            return jwtutil.generateToken(user);
         }
         return userService.loginUser(user);
     }

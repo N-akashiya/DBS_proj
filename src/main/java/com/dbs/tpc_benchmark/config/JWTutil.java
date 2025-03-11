@@ -13,7 +13,7 @@ public class JWTutil {
     private static Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
     // 生成token
-    public static String generateToken(User userDetails) {
+    public String generateToken(User userDetails) {
         return Jwts.builder()
                 .setSubject(userDetails.getName())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
