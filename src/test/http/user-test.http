@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:8080
+@userPassword = test123
+
+### 1. 注册新用户
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "test-san",
+  "password": "{{userPassword}}"
+}
+
+### 2. 管理员登录
+# @name adminLogin
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "name": "root",
+  "password": "admin123"
+}
+
+### 保存管理员 token
+@adminToken = {{adminLogin.response.body}}
+
+### 3. 审批新用户
+PUT {{baseUrl}}/admin/users/testuser/approve
+Authorization: Bearer {{adminToken}}
+
+### 4. 新用户登录
+# @name userLogin
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "name": "testuser",
+  "password": "{{userPassword}}"
+}
+
+### 保存用户 token
+@userToken = {{userLogin.response.body}}
+
+### 5. 管理员查看所有用户
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### 6. 普通用户访问管理功能（应失败）
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{userToken}}
+
+### 7. 管理员删除用户
+DELETE {{baseUrl}}/admin/users/newuser
+Authorization: Bearer {{adminToken}}
