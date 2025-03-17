@@ -3,6 +3,7 @@ package com.dbs.tpc_benchmark.config;
 import com.dbs.tpc_benchmark.model.User;
 import com.dbs.tpc_benchmark.repository.UserRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class AdminInit {
     private String AdminPassword;
 
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional
     public void initializeAdminUser() {
         if (userRepository.findByName("root") == null) {
             User adminUser = new User();

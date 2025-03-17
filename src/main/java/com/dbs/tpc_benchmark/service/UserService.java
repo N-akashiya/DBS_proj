@@ -31,10 +31,20 @@ public class UserService {
         if (existingUser == null) {
             return "User not found";
         }
-        if (user.getStatus().equals("PENDING")) {
+        System.out.println("Found user: " + existingUser.getName() + ", status: " + existingUser.getStatus());
+        if ("PENDING".equals(existingUser.getStatus())) {
             return "User not approved";
         }
-        if (!passwordEncoder.matches(user.getPassword(), existingUser.getPassword())) {
+        boolean passwordMatches = false;
+        try {
+            passwordMatches = passwordEncoder.matches(user.getPassword(), existingUser.getPassword());
+            System.out.println("Matching: " + passwordMatches);
+        } catch (Exception e) {
+            System.out.println("Matching error: " + e.getMessage());
+            e.printStackTrace();
+            return "Error matching password";
+        }
+        if (!passwordMatches) {
             return "Invalid password";
         }
         return "Login successful:)";

@@ -30,10 +30,14 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
+        System.out.println("Login API called for user: " + user.getName());
+        System.out.println("Password received: " + user.getPassword());
         String res = userService.loginUser(user);
+        System.out.println("Login result: " + res);
         if (res.equals("Login successful:)")) {
             User existingUser = userRepository.findByName(user.getName());
             String token = jwtutil.generateToken(existingUser);
+            System.out.println("Token generated: " + token);
             return ResponseEntity.ok(token);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);

@@ -19,12 +19,21 @@ public class JWTinterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
-        // 获取
+        String path = request.getRequestURI();
+        System.out.println("JWTinterceptor: Processing request to " + request.getRequestURI());
+        
+        // 检查路径
+        if (path.contains("/error") || path.equals("/users/login") || path.equals("/users/register"))
+            return true; 
+        
+        // 获取Authorization header
         String token = request.getHeader("Authorization");
         if (token == null || !token.startsWith("Bearer ")) {
+            System.out.println("JWTinterceptor: Missing or invalid Authorization header");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
             return false;
         }
+
         // 去掉Bearer
         token = token.substring(7);
         try {
@@ -39,8 +48,7 @@ public class JWTinterceptor implements HandlerInterceptor {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-            // 检查路径和角色
-            String path = request.getRequestURI();
+            // 检查角色
             String role = claims.get("role", String.class);
             request.setAttribute("role", role);
             if (path.startsWith("/admin/") && !"ADMIN".equals(role)) {
@@ -61,5 +69,7 @@ public class JWTinterceptor implements HandlerInterceptor {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
             return false;
         }
+    
     }
+
 }

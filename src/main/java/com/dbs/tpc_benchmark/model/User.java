@@ -1,7 +1,5 @@
 package com.dbs.tpc_benchmark.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -11,7 +9,6 @@ public class User {
     @Column(unique = true, nullable = false)
     private String name;
     
-    @JsonIgnore
     @Column(nullable = false)
     private String password;
     
