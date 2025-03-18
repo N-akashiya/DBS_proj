@@ -1,5 +1,6 @@
 package com.dbs.tpc_benchmark.controller;
 
+import com.dbs.tpc_benchmark.config.ApiResponse;
 import com.dbs.tpc_benchmark.config.JWTutil;
 import com.dbs.tpc_benchmark.model.User;
 import com.dbs.tpc_benchmark.service.UserService;
@@ -10,9 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.*;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
+
     @Autowired
     private UserService userService;
 
@@ -23,52 +27,97 @@ public class UserController {
     private UserRepository userRepository;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody User user) {
-        String res = userService.registerUser(user);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ApiResponse<Map<String, Object>>> registerUser(@RequestBody User user) {
+        Map<String, Object> res = userService.registerUser(user);
+        boolean success = (boolean) res.get("success");
+        String message = (String) res.get("message");
+        
+        if (success) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", user.getName());
+            return ResponseEntity.ok(ApiResponse.success(message, data));
+        }
+        else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
+    public ResponseEntity<ApiResponse<Object>> loginUser(@RequestBody User user) {
         System.out.println("Login API called for user: " + user.getName());
-        System.out.println("Password received: " + user.getPassword());
-        String res = userService.loginUser(user);
-        System.out.println("Login result: " + res);
-        if (res.equals("Login successful:)")) {
+        Map<String, Object> res = userService.loginUser(user);
+        boolean success = (boolean) res.get("success");
+        String message = (String) res.get("message");
+
+        if (success) {
             User existingUser = userRepository.findByName(user.getName());
             String token = jwtutil.generateToken(existingUser);
-            System.out.println("Token generated: " + token);
-            return ResponseEntity.ok(token);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", existingUser.getName());
+            data.put("role", existingUser.getRole());
+            data.put("token", token);
+            return ResponseEntity.ok(ApiResponse.success(message, data));
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(message));
     }
 
+    // Admin APIs
+
     @GetMapping("/all")
-    public ResponseEntity<?> getAllUsers(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<List<User>>> getAllUsers(HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
         if (!"ADMIN".equals(role))
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
-        return ResponseEntity.ok(userService.getAllUsers());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
+        
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(ApiResponse.success("Get all users", users));
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<?> getPendingUsers(HttpServletRequest request) {
-        return ResponseEntity.ok(userService.getPendingUsers());
+    public ResponseEntity<ApiResponse<List<User>>> getPendingUsers(HttpServletRequest request) {
+        String role = (String) request.getAttribute("role");
+        if (!"ADMIN".equals(role))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
+        
+        List<User> pendingusers = userRepository.findByStatus("PENDING");
+        return ResponseEntity.ok(ApiResponse.success("Get pending users", pendingusers));
     }
 
     @PostMapping("/approve")
-    public ResponseEntity<?> approveUser(@RequestParam String username, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Object>> approveUser(@RequestParam String username, HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
         if (!"ADMIN".equals(role))
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
-        return ResponseEntity.ok(userService.approveUser(username));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
+        
+        Map<String, Object> res = userService.approveUser();
+        boolean success = (boolean) res.get("success");
+        String message = (String) res.get("message");
+
+        if (success) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("count", res.get("count"));
+            data.put("approvedUsers", res.get("approvedUsers"));
+            return ResponseEntity.ok(ApiResponse.success(message, data));
+        }   
+        else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteUser(@RequestParam String username, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Object>> deleteUser(@RequestParam String username, HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
         if (!"ADMIN".equals(role))
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
-        return ResponseEntity.ok(userService.deleteUser(username));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
+        
+        Map<String, Object> res = userService.deleteUser(username);
+        boolean success = (boolean) res.get("success");
+        String message = (String) res.get("message");
+        if (success) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", username);
+            return ResponseEntity.ok(ApiResponse.success(message, data));
+        }
+        else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
     }
 }

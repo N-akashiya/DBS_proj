@@ -15,25 +15,35 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public String registerUser(User user) {
+    public Map<String, Object> registerUser(User user) {
+        Map<String, Object> res = new HashMap<>();
         if (userRepository.findByName(user.getName()) != null) {
-            return "User already exists";
+            res.put("success", false);
+            res.put("message","User already exists");
+            return res;
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("USER");
         user.setStatus("PENDING");
         userRepository.save(user);
-        return "Please wait for approval";
+        res.put("success", true);
+        res.put("message", "Please wait for approval");
+        return res;
     }
 
-    public String loginUser(User user) {
+    public Map<String, Object> loginUser(User user) {
+        Map<String, Object> res = new HashMap<>();
         User existingUser = userRepository.findByName(user.getName());
         if (existingUser == null) {
-            return "User not found";
+            res.put("success", false);
+            res.put("message", "User not found");
+            return res;
         }
         System.out.println("Found user: " + existingUser.getName() + ", status: " + existingUser.getStatus());
         if ("PENDING".equals(existingUser.getStatus())) {
-            return "User not approved";
+            res.put("success", false);
+            res.put("message", "User not approved");
+            return res;
         }
         boolean passwordMatches = false;
         try {
@@ -42,12 +52,19 @@ public class UserService {
         } catch (Exception e) {
             System.out.println("Matching error: " + e.getMessage());
             e.printStackTrace();
-            return "Error matching password";
+            res.put("success", false);
+            res.put("message", "Error matching password");
+            return res;
         }
         if (!passwordMatches) {
-            return "Invalid password";
+            res.put("success", false);
+            res.put("message", "Invalid password");
+            return res;
         }
-        return "Login successful:)";
+        res.put("success", true);
+        res.put("message", "Login successful");
+        System.out.println("Login successful:)");
+        return res;
     }
 
     public List<User> getAllUsers() {
@@ -59,22 +76,47 @@ public class UserService {
     }
 
     // 目前全部pending的用户都会被approve
-    public String approveUser(String username) {
-        User pendingUser = userRepository.findByName(username);
-        if (pendingUser != null) {
-            pendingUser.setStatus("APPROVED");
-            userRepository.save(pendingUser);
-            return "User approved";
+    public Map<String, Object> approveUser() {
+        Map<String, Object> res = new HashMap<>();
+        List<User> pendingUsers = userRepository.findByStatus("PENDING");
+        
+        if (pendingUsers.isEmpty()) {
+            res.put("success", false);
+            res.put("message", "No pending users");
+            return res;
         }
-        return "User not found";
+        
+        List<String> approvedUsernames = new ArrayList<>();
+        for (User user : pendingUsers) {
+            user.setStatus("APPROVED");
+            userRepository.save(user);
+            approvedUsernames.add(user.getName());
+        }
+        
+        res.put("success", true);
+        res.put("message", "All pending users approved");
+        res.put("count", approvedUsernames.size());
+        res.put("approvedUsers", approvedUsernames);
+        
+        return res;
     }
 
-    public String deleteUser(String username) {
+    public Map<String, Object> deleteUser(String username) {
+        Map<String, Object> res = new HashMap<>();
         User user = userRepository.findByName(username);
-        if (user != null) {
-            userRepository.delete(user);
-            return "User deleted";
+        if (user == null) {
+            res.put("success", false);
+            res.put("message", "User not found");
+            return res;
         }
-        return "User not found";
+        if ("ADMIN".equals(user.getRole())) {
+            res.put("success", false);
+            res.put("message", "Cannot delete administrators");
+            return res;   
+        }    
+        userRepository.delete(user);
+        res.put("success", true);
+        res.put("message", "User deleted");
+        return res;
     }
 }
