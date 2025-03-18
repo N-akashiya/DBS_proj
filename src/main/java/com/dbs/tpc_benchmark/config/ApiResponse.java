@@ -1,19 +1,23 @@
 package com.dbs.tpc_benchmark.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
 
+    public ApiResponse() {
+    }
+    
+    public ApiResponse(boolean success, String message, T data) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+    }
+
+    // 静态工厂方法
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, "Success!", data);
     }
