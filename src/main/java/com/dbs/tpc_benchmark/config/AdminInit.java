@@ -1,6 +1,6 @@
 package com.dbs.tpc_benchmark.config;
 
-import com.dbs.tpc_benchmark.model.User;
+import com.dbs.tpc_benchmark.typings.entity.User;
 import com.dbs.tpc_benchmark.repository.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

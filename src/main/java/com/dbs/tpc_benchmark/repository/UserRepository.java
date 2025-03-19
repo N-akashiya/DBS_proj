@@ -1,6 +1,6 @@
 package com.dbs.tpc_benchmark.repository;
 
-import com.dbs.tpc_benchmark.model.User;
+import com.dbs.tpc_benchmark.typings.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
