@@ -38,12 +38,8 @@ public class UserController {
         String message = (String) res.get("message");
 
         if (success) {
-            Map<String, Object> data = new HashMap<>();
-            data.put("name", user.getName());
-
             StatusVO statusVO = StatusVO.builder()
-                    .message(message)
-                    .data(data)
+                    .data(user.getName())
                     .build();
             return Result.success(statusVO, message);
         }
