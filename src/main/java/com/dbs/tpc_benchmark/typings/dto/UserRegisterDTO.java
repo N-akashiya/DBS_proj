@@ -8,6 +8,4 @@ import java.io.Serializable;
 public class UserRegisterDTO implements Serializable {
     private String name;
     private String password;
-    private String role;
-    private String status;
 }
