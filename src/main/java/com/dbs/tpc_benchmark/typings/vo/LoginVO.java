@@ -7,6 +7,6 @@ import java.io.Serializable;
 
 @Data
 @Builder
-public class StatusVO implements Serializable {
-    private String data;
+public class LoginVO implements Serializable {
+    private String name;
 }

@@ -9,7 +9,7 @@ import java.io.Serializable;
  * 用于接收前端请求的数据
  */
 @Data
-public class UserLoginDTO implements Serializable {
+public class UserRegLogDTO implements Serializable {
     private String name;
     private String password;
 }

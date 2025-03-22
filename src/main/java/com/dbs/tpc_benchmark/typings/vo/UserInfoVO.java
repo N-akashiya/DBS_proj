@@ -16,6 +16,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class UserInfoVO implements Serializable {
+    private Long id;
     private String name;
     private String role;
     private String authorization;

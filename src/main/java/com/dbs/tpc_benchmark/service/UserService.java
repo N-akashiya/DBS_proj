@@ -1,9 +1,9 @@
 package com.dbs.tpc_benchmark.service;
 
-import com.dbs.tpc_benchmark.typings.dto.UserRegisterDTO;
 import com.dbs.tpc_benchmark.typings.entity.User;
 import com.dbs.tpc_benchmark.repository.UserRepository;
-import com.dbs.tpc_benchmark.typings.dto.UserLoginDTO;
+import com.dbs.tpc_benchmark.typings.dto.UserRegLogDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Map<String, Object> registerUser(UserRegisterDTO userRegisterDTO) {
+    public Map<String, Object> registerUser(UserRegLogDTO userRegisterDTO) {
         Map<String, Object> res = new HashMap<>();
         User user = new User();
         if (userRepository.findByName(userRegisterDTO.getName()) != null) {
@@ -35,7 +35,7 @@ public class UserService {
         return res;
     }
 
-    public Map<String, Object> loginUser(UserLoginDTO user) {
+    public Map<String, Object> loginUser(UserRegLogDTO user) {
         Map<String, Object> res = new HashMap<>();
         User existingUser = userRepository.findByName(user.getName());
         if (existingUser == null) {
@@ -79,27 +79,40 @@ public class UserService {
        return userRepository.findByStatus("PENDING");
    }
 
-   // 目前全部pending的用户都会被approve
-   public Map<String, Object> approveUser() {
+   public Map<String, Object> approveUser(List<Long> userIds) {
        Map<String, Object> res = new HashMap<>();
-       List<User> pendingUsers = userRepository.findByStatus("PENDING");
-
-       if (pendingUsers.isEmpty()) {
+       
+       if (userIds == null || userIds.isEmpty()) {
            res.put("success", false);
-           res.put("message", "No pending users");
+           res.put("message", "No users selected");
            return res;
        }
 
        List<String> approvedUsernames = new ArrayList<>();
-       for (User user : pendingUsers) {
-           user.setStatus("APPROVED");
-           userRepository.save(user);
-           approvedUsernames.add(user.getName());
+       int success_cnt = 0;
+       for (Long userId : userIds) {
+            Optional<User> optionalUser = userRepository.findById(userId);
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                if ("PENDING".equals(user.getStatus())) {
+                    user.setStatus("APPROVED");
+                    userRepository.save(user);
+                    approvedUsernames.add(user.getName());
+                    success_cnt++;
+                }
+            }
+       }
+
+       if (success_cnt == 0) {
+           res.put("success", false);
+           res.put("message", "No users approved");
+           return res;
+        
        }
 
        res.put("success", true);
-       res.put("message", "All pending users approved");
-       res.put("count", approvedUsernames.size());
+       res.put("message", success_cnt + " users approved");
+       res.put("count", success_cnt);
        res.put("approvedUsers", approvedUsernames);
 
        return res;

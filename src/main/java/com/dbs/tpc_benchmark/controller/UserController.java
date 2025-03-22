@@ -2,12 +2,12 @@ package com.dbs.tpc_benchmark.controller;
 
 import com.dbs.tpc_benchmark.config.Result;
 import com.dbs.tpc_benchmark.config.JWTutil;
-import com.dbs.tpc_benchmark.typings.dto.UserRegisterDTO;
 import com.dbs.tpc_benchmark.typings.entity.User;
 import com.dbs.tpc_benchmark.service.UserService;
 import com.dbs.tpc_benchmark.repository.UserRepository;
-import com.dbs.tpc_benchmark.typings.dto.UserLoginDTO;
-import com.dbs.tpc_benchmark.typings.vo.StatusVO;
+import com.dbs.tpc_benchmark.typings.dto.UserRegLogDTO;
+import com.dbs.tpc_benchmark.typings.dto.UserApproveDTO;
+import com.dbs.tpc_benchmark.typings.vo.LoginVO;
 import com.dbs.tpc_benchmark.typings.vo.UserApprovalVO;
 import com.dbs.tpc_benchmark.typings.vo.UserDeleteVO;
 import com.dbs.tpc_benchmark.typings.vo.UserInfoVO;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.*;
-
 
 @RestController
 @RequestMapping("/users")
@@ -34,23 +33,23 @@ public class UserController {
     private UserRepository userRepository;
 
     @PostMapping("/register")
-    public Result<StatusVO> registerUser(@RequestBody UserRegisterDTO user) {
+    public Result<LoginVO> registerUser(@RequestBody UserRegLogDTO user) {
         Map<String, Object> res = userService.registerUser(user);
         boolean success = (boolean) res.get("success");
         String message = (String) res.get("message");
 
         if (success) {
-            StatusVO statusVO = StatusVO.builder()
-                    .data(user.getName())
+            LoginVO vo = LoginVO.builder()
+                    .name(user.getName())
                     .build();
-            return Result.success(statusVO, message);
+            return Result.success(vo, message);
         } 
         else
             return Result.error(message);
     }
 
     @PostMapping("/login")
-    public Result<UserInfoVO> loginUser(@RequestBody UserLoginDTO user) {
+    public Result<UserInfoVO> loginUser(@RequestBody UserRegLogDTO user) {
         System.out.println("Login API called for user: " + user.getName());
         Map<String, Object> res = userService.loginUser(user);
         boolean success = (boolean) res.get("success");
@@ -79,10 +78,11 @@ public class UserController {
             return Result.forbidden("Access denied");
 
         List<User> users = userRepository.findAll();
-        List<Map<String, String>> userInfoList = new ArrayList<>();
+        List<Map<String, Object>> userInfoList = new ArrayList<>();
         
         for (User user : users) {
-            Map<String, String> userInfo = new HashMap<>();
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
             userInfo.put("name", user.getName());
             userInfo.put("status", user.getStatus());
             userInfo.put("role", user.getRole());
@@ -103,10 +103,11 @@ public class UserController {
             return Result.forbidden("Access denied");
 
         List<User> pendingUsers = userRepository.findByStatus("PENDING");
-        List<Map<String, String>> userInfoList = new ArrayList<>();
+        List<Map<String, Object>> userInfoList = new ArrayList<>();
         
         for (User user : pendingUsers) {
-            Map<String, String> userInfo = new HashMap<>();
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
             userInfo.put("name", user.getName());
             userInfo.put("status", user.getStatus());
             userInfoList.add(userInfo);
@@ -120,12 +121,12 @@ public class UserController {
     }
 
     @PostMapping("/approve")
-    public Result<UserApprovalVO> approveUser(HttpServletRequest request) {
+    public Result<UserApprovalVO> approveUser(@RequestBody UserApproveDTO approveDTO, HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
         if (!"ADMIN".equals(role))
             return Result.forbidden("Access denied");
 
-        Map<String, Object> res = userService.approveUser();
+        Map<String, Object> res = userService.approveUser(approveDTO.getIds());
         boolean success = (boolean) res.get("success");
         String message = (String) res.get("message");
 

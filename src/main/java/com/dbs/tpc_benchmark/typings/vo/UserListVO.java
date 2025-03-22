@@ -13,5 +13,5 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserListVO {
-    private List<Map<String, String>> users;
+    private List<Map<String, Object>> users;
 }
