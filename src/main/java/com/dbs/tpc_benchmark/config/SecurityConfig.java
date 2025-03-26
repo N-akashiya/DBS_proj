@@ -19,15 +19,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())  // 禁用CSRF
-            .cors(cors -> cors.disable())  // 禁用CORS (可选)
+            .cors(cors -> cors.disable())  // 禁用CORS
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()  // 允许所有请求，认证交给我们的JWT拦截器
+                .anyRequest().permitAll()  // 允许所有请求，认证交给JWT拦截器
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 无状态会话
             )
             .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.disable()) // 允许iframe (可选)
+                .frameOptions(frameOptions -> frameOptions.disable()) // 允许iframe
             );
         
         return http.build();
