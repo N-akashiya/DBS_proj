@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS user (
 
 ```
 默认管理员
-- root
-- rooo123t
+- name: root
+- password: rooo123t
 
 手动生成BCrypt密码: https://bcrypt-generator.com/ (可选)
 ```
