@@ -44,4 +44,14 @@ public class TableController {
         }
         return Result.success(table, "Get table successfully");
     }
+
+    @GetMapping("/allTables")
+    public Result<List<TableVO>> getAllTables(HttpServletRequest request) {
+        String role = (String) request.getAttribute("role");
+        if (!"ADMIN".equals(role))
+            return Result.forbidden("Access denied");
+
+        List<TableVO> tables = tableService.getAllTables();
+        return Result.success(tables, "Get all tables successfully");
+    }
 }
