@@ -38,10 +38,7 @@ public class JWTinterceptor implements HandlerInterceptor {
         token = token.substring(7);
         try {
             // 验证
-            if (!jwtutil.validateToken(token)) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
-                return false;
-            }
+            Jwts.parserBuilder().setSigningKey(jwtutil.getSecretKey()).build().parseClaimsJws(token);
             // 解析
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(jwtutil.getSecretKey())
@@ -63,6 +60,7 @@ public class JWTinterceptor implements HandlerInterceptor {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT security exception");
             return false;
         } catch (ExpiredJwtException e) {
+            response.setHeader("X-Token-Expired", "true");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Expired JWT token");
             return false;
         } catch (Exception e) {
