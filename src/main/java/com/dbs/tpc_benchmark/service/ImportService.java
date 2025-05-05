@@ -4,6 +4,8 @@ import com.dbs.tpc_benchmark.repository.LogRepository;
 import com.dbs.tpc_benchmark.typings.entity.Log;
 import com.dbs.tpc_benchmark.typings.dto.ImportDTO;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReaderBuilder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -98,72 +100,83 @@ public class ImportService {
         int imported = 0;
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
-
-        try (CSVReader reader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
-            String[] line;
-            int lineNumber = 0;
+        
+        try {
+            com.opencsv.CSVParser csvParser = new CSVParserBuilder()
+                .withSeparator('|')
+                .build();
             
-            String sql = "INSERT INTO ORDERS (O_ORDERKEY, O_CUSTKEY, O_ORDERSTATUS, " +
-                    "O_TOTALPRICE, O_ORDERDATE, O_ORDERPRIORITY, O_CLERK, O_SHIPPRIORITY, O_COMMENT) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            while ((line = reader.readNext()) != null) {
-                lineNumber++;
-                total++;
+            try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream()))
+                .withCSVParser(csvParser)
+                .build()) {
+                String[] line;
+                int lineNumber = 0;
                 
-                String originalRow = String.join(",", line);
-                // 检查必要字段是否完整
-                if (line.length < 9) {
-                    errorLines.add(lineNumber);
-                    logWriter.write(lineNumber + ",\"" + originalRow + "\", the number of fields is less than 9\n");
-                    continue;
-                }
-                try {
-                    long orderKey = Long.parseLong(line[0]);
-                    // 订单金额必须为正数
-                    double totalPrice = Double.parseDouble(line[3]);
+                String sql = "INSERT INTO ORDERS (O_ORDERKEY, O_CUSTKEY, O_ORDERSTATUS, " +
+                        "O_TOTALPRICE, O_ORDERDATE, O_ORDERPRIORITY, O_CLERK, O_SHIPPRIORITY, O_COMMENT) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                
+                while ((line = reader.readNext()) != null) {
+                    lineNumber++;
+                    total++;
                     
-                    if (orderKey <= 0) {
+                    String originalRow = String.join("|", line);
+                    // 检查必要字段是否完整
+                    if (line.length < 9) {
                         errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", order key must be a positive integer\n");
+                        logWriter.write(lineNumber + ",\"" + originalRow + "\", the number of fields is less than 9\n");
                         continue;
                     }
+                    try {
+                        long orderKey = Long.parseLong(line[0]);
+                        // 订单金额必须为正数
+                        double totalPrice = Double.parseDouble(line[3]);
+                        
+                        if (orderKey <= 0) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", order key must be a positive integer\n");
+                            continue;
+                        }
 
-                    if (totalPrice <= 0) {
+                        if (totalPrice <= 0) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", total price must be a positive number\n");
+                            continue;
+                        }
+
+                        // 所有验证通过
+                        Object[] params = new Object[9];
+                        params[0] = orderKey;
+                        params[1] = Long.parseLong(line[1]);  // O_CUSTKEY
+                        params[2] = line[2];                  // O_ORDERSTATUS
+                        params[3] = totalPrice;               // O_TOTALPRICE
+                        params[4] = line[4];                  // O_ORDERDATE
+                        params[5] = line[5];                  // O_ORDERPRIORITY
+                        params[6] = line[6];                  // O_CLERK
+                        params[7] = Integer.parseInt(line[7]);// O_SHIPPRIORITY
+                        params[8] = line[8];                  // O_COMMENT
+                        
+                        batchParams.add(params);
+                        imported++;
+                        
+                        if (batchParams.size() >= BATCH_SIZE) {
+                            jdbcTemplate.batchUpdate(sql, batchParams);
+                            batchParams.clear();
+                        }
+                    }
+                    catch (NumberFormatException e) {
                         errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", total price must be a positive number\n");
-                        continue;
-                    }
-
-                    // 所有验证通过
-                    Object[] params = new Object[9];
-                    params[0] = orderKey;
-                    params[1] = Long.parseLong(line[1]);  // O_CUSTKEY
-                    params[2] = line[2];                  // O_ORDERSTATUS
-                    params[3] = totalPrice;               // O_TOTALPRICE
-                    params[4] = line[4];                  // O_ORDERDATE
-                    params[5] = line[5];                  // O_ORDERPRIORITY
-                    params[6] = line[6];                  // O_CLERK
-                    params[7] = Integer.parseInt(line[7]);// O_SHIPPRIORITY
-                    params[8] = line[8];                  // O_COMMENT
-                    
-                    batchParams.add(params);
-                    imported++;
-                    
-                    if (batchParams.size() >= BATCH_SIZE) {
-                        jdbcTemplate.batchUpdate(sql, batchParams);
-                        batchParams.clear();
+                        logWriter.write(lineNumber + ", invalid number format\n");
                     }
                 }
-                catch (NumberFormatException e) {
-                    errorLines.add(lineNumber);
-                    logWriter.write(lineNumber + ", invalid number format\n");
+                // 处理剩余的批次
+                if (!batchParams.isEmpty()) {
+                    jdbcTemplate.batchUpdate(sql, batchParams);
                 }
             }
-            // 处理剩余的批次
-            if (!batchParams.isEmpty()) {
-                jdbcTemplate.batchUpdate(sql, batchParams);
-            }
+        } catch (Exception e) {
+            errorLines.add(-1); // 导入失败
+            logWriter.write("Error: " + e.getMessage() + "\n");
         }
         
         saveImportLog("ORDERS", total, imported, errorLines, System.currentTimeMillis() - startTime, logPath);
@@ -184,97 +197,108 @@ public class ImportService {
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
 
-        try (CSVReader reader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
-            String[] line;
-            int lineNumber = 0;
+        try {
+            com.opencsv.CSVParser csvParser = new CSVParserBuilder()
+                .withSeparator('|')
+                .build();
             
-            String sql = "INSERT INTO LINEITEM (L_ORDERKEY, L_PARTKEY, L_SUPPKEY, L_LINENUMBER, " +
-                    "L_QUANTITY, L_EXTENDEDPRICE, L_DISCOUNT, L_TAX, L_RETURNFLAG, " +
-                    "L_LINESTATUS, L_SHIPDATE, L_COMMITDATE, L_RECEIPTDATE, L_SHIPINSTRUCT, " +
-                    "L_SHIPMODE, L_COMMENT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            while ((line = reader.readNext()) != null) {
-                lineNumber++;
-                total++;
-
-                String originalRow = String.join(",", line);
+            try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream()))
+                .withCSVParser(csvParser)
+                .build()) {
+                String[] line;
+                int lineNumber = 0;
                 
-                if (line.length < 16) {
-                    errorLines.add(lineNumber);
-                    logWriter.write(lineNumber + ",\"" + originalRow + "\", the number of fields is less than 16\n");
-                    continue;
+                String sql = "INSERT INTO LINEITEM (L_ORDERKEY, L_PARTKEY, L_SUPPKEY, L_LINENUMBER, " +
+                        "L_QUANTITY, L_EXTENDEDPRICE, L_DISCOUNT, L_TAX, L_RETURNFLAG, " +
+                        "L_LINESTATUS, L_SHIPDATE, L_COMMITDATE, L_RECEIPTDATE, L_SHIPINSTRUCT, " +
+                        "L_SHIPMODE, L_COMMENT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                
+                while ((line = reader.readNext()) != null) {
+                    lineNumber++;
+                    total++;
+
+                    String originalRow = String.join("|", line);
+                    
+                    if (line.length < 16) {
+                        errorLines.add(lineNumber);
+                        logWriter.write(lineNumber + ",\"" + originalRow + "\", the number of fields is less than 16\n");
+                        continue;
+                    }
+                    try {
+                        // 主键检查
+                        long orderKey = Long.parseLong(line[0]);
+                        long partKey = Long.parseLong(line[1]);
+                        long suppKey = Long.parseLong(line[2]);
+                        int lineNum = Integer.parseInt(line[3]);
+                        // 数量必须为正，折扣必须在0-1之间
+                        double quantity = Double.parseDouble(line[4]);
+                        double extendedPrice = Double.parseDouble(line[5]);
+                        double discount = Double.parseDouble(line[6]);
+                        double tax = Double.parseDouble(line[7]);
+                        
+                        if (orderKey <= 0) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", order key must be a positive integer\n");
+                            continue;
+                        }
+                        
+                        if (lineNum <= 0) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", line number must be a positive integer\n");
+                            continue;
+                        }
+                        
+                        if (quantity <= 0) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", quantity must be a positive number\n");
+                            continue;
+                        }
+                        
+                        if (discount < 0 || discount > 1) {
+                            errorLines.add(lineNumber);
+                            logWriter.write(lineNumber + ",\"" + originalRow + "\", discount must be between 0 and 1\n");
+                            continue;
+                        }
+                        
+                        // 所有验证通过
+                        Object[] params = new Object[16];
+                        params[0] = orderKey;                  // L_ORDERKEY
+                        params[1] = partKey;                   // L_PARTKEY
+                        params[2] = suppKey;                   // L_SUPPKEY
+                        params[3] = lineNum;                   // L_LINENUMBER
+                        params[4] = quantity;                  // L_QUANTITY
+                        params[5] = extendedPrice;             // L_EXTENDEDPRICE
+                        params[6] = discount;                  // L_DISCOUNT
+                        params[7] = tax;                       // L_TAX
+                        params[8] = line[8];                   // L_RETURNFLAG
+                        params[9] = line[9];                   // L_LINESTATUS
+                        params[10] = line[10];                 // L_SHIPDATE
+                        params[11] = line[11];                 // L_COMMITDATE
+                        params[12] = line[12];                 // L_RECEIPTDATE
+                        params[13] = line[13];                 // L_SHIPINSTRUCT
+                        params[14] = line[14];                 // L_SHIPMODE
+                        params[15] = line[15];                 // L_COMMENT
+                        
+                        batchParams.add(params);
+                        imported++;
+                        
+                        if (batchParams.size() >= BATCH_SIZE) {
+                            jdbcTemplate.batchUpdate(sql, batchParams);
+                            batchParams.clear();
+                        }
+                    } catch (NumberFormatException e) {
+                        errorLines.add(lineNumber);
+                        logWriter.write(lineNumber + ", invalid number format\n");
+                    }
                 }
-                try {
-                    // 主键检查
-                    long orderKey = Long.parseLong(line[0]);
-                    long partKey = Long.parseLong(line[1]);
-                    long suppKey = Long.parseLong(line[2]);
-                    int lineNum = Integer.parseInt(line[3]);
-                    // 数量必须为正，折扣必须在0-1之间
-                    double quantity = Double.parseDouble(line[4]);
-                    double extendedPrice = Double.parseDouble(line[5]);
-                    double discount = Double.parseDouble(line[6]);
-                    double tax = Double.parseDouble(line[7]);
-                    
-                    if (orderKey <= 0) {
-                        errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", order key must be a positive integer\n");
-                        continue;
-                    }
-                    
-                    if (lineNum <= 0) {
-                        errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", line number must be a positive integer\n");
-                        continue;
-                    }
-                    
-                    if (quantity <= 0) {
-                        errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", quantity must be a positive number\n");
-                        continue;
-                    }
-                    
-                    if (discount < 0 || discount > 1) {
-                        errorLines.add(lineNumber);
-                        logWriter.write(lineNumber + ",\"" + originalRow + "\", discount must be between 0 and 1\n");
-                        continue;
-                    }
-                    
-                    // 所有验证通过
-                    Object[] params = new Object[16];
-                    params[0] = orderKey;                  // L_ORDERKEY
-                    params[1] = partKey;                   // L_PARTKEY
-                    params[2] = suppKey;                   // L_SUPPKEY
-                    params[3] = lineNum;                   // L_LINENUMBER
-                    params[4] = quantity;                  // L_QUANTITY
-                    params[5] = extendedPrice;             // L_EXTENDEDPRICE
-                    params[6] = discount;                  // L_DISCOUNT
-                    params[7] = tax;                       // L_TAX
-                    params[8] = line[8];                   // L_RETURNFLAG
-                    params[9] = line[9];                   // L_LINESTATUS
-                    params[10] = line[10];                 // L_SHIPDATE
-                    params[11] = line[11];                 // L_COMMITDATE
-                    params[12] = line[12];                 // L_RECEIPTDATE
-                    params[13] = line[13];                 // L_SHIPINSTRUCT
-                    params[14] = line[14];                 // L_SHIPMODE
-                    params[15] = line[15];                 // L_COMMENT
-                    
-                    batchParams.add(params);
-                    imported++;
-                    
-                    if (batchParams.size() >= BATCH_SIZE) {
-                        jdbcTemplate.batchUpdate(sql, batchParams);
-                        batchParams.clear();
-                    }
-                } catch (NumberFormatException e) {
-                    errorLines.add(lineNumber);
-                    logWriter.write(lineNumber + ", invalid number format\n");
+                // 处理剩余的批次
+                if (!batchParams.isEmpty()) {
+                    jdbcTemplate.batchUpdate(sql, batchParams);
                 }
             }
-            // 处理剩余的批次
-            if (!batchParams.isEmpty()) {
-                jdbcTemplate.batchUpdate(sql, batchParams);
-            }
+        } catch (Exception e) {
+            errorLines.add(-1);
+            logWriter.write("Error: " + e.getMessage() + "\n");
         }
         
         saveImportLog("LINEITEM", total, imported, errorLines, System.currentTimeMillis() - startTime, logPath);
