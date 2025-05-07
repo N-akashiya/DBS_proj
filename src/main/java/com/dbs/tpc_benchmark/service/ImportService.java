@@ -100,6 +100,7 @@ public class ImportService {
         int imported = 0;
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
+        List<Integer> validLines = new ArrayList<>();
         
         try {
             com.opencsv.CSVParser csvParser = new CSVParserBuilder()
@@ -157,11 +158,13 @@ public class ImportService {
                         params[8] = line[8];                  // O_COMMENT
                         
                         batchParams.add(params);
-                        imported++;
+                        validLines.add(lineNumber);
                         
                         if (batchParams.size() >= BATCH_SIZE) {
-                            jdbcTemplate.batchUpdate(sql, batchParams);
+                            int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                            imported += countSuccessfulUpdates(updateCnt);
                             batchParams.clear();
+                            validLines.clear();
                         }
                     }
                     catch (NumberFormatException e) {
@@ -171,7 +174,8 @@ public class ImportService {
                 }
                 // 处理剩余的批次
                 if (!batchParams.isEmpty()) {
-                    jdbcTemplate.batchUpdate(sql, batchParams);
+                    int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                    imported += countSuccessfulUpdates(updateCnt);
                 }
             }
         } catch (Exception e) {
@@ -196,6 +200,7 @@ public class ImportService {
         int imported = 0;
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
+        List<Integer> validLines = new ArrayList<>();
 
         try {
             com.opencsv.CSVParser csvParser = new CSVParserBuilder()
@@ -280,11 +285,13 @@ public class ImportService {
                         params[15] = line[15];                 // L_COMMENT
                         
                         batchParams.add(params);
-                        imported++;
+                        validLines.add(lineNumber);
                         
                         if (batchParams.size() >= BATCH_SIZE) {
-                            jdbcTemplate.batchUpdate(sql, batchParams);
+                            int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                            imported += countSuccessfulUpdates(updateCnt);
                             batchParams.clear();
+                            validLines.clear();
                         }
                     } catch (NumberFormatException e) {
                         errorLines.add(lineNumber);
@@ -293,7 +300,8 @@ public class ImportService {
                 }
                 // 处理剩余的批次
                 if (!batchParams.isEmpty()) {
-                    jdbcTemplate.batchUpdate(sql, batchParams);
+                    int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                    imported += countSuccessfulUpdates(updateCnt);
                 }
             }
         } catch (Exception e) {
@@ -332,5 +340,14 @@ public class ImportService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private int countSuccessfulUpdates(int[] updateCnt) {
+        int cnt = 0;
+        for (int i : updateCnt) {
+            if (i > 0) // 更新成功
+                cnt++;
+        }
+        return cnt;
     }
 }
