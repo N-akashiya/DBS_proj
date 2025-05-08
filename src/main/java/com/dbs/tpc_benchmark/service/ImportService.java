@@ -115,6 +115,8 @@ public class ImportService {
 
         int total = 0; // 读到的行数
         int imported = 0; // 读到的行数中有效的行数
+        long processedBytes = 0;
+        long totalBytes = file.getSize();
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
         List<Integer> validLines = new ArrayList<>();
@@ -135,11 +137,15 @@ public class ImportService {
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 while ((line = reader.readNext()) != null) {
-                    if (total % UPLOAD_INTERVAL == 0) {
-                        progressService.updateProgress(taskId, total, imported);
-                    }
                     lineNumber++;
                     total++;
+
+                    if (total % UPLOAD_INTERVAL == 0) {
+                        progressService.updateProgress(taskId, total, imported, totalBytes, processedBytes);
+                    }
+                    String row = String.join("|", line);
+                    processedBytes += row.getBytes(StandardCharsets.UTF_8).length
+                            + System.lineSeparator().getBytes(StandardCharsets.UTF_8).length;
 
                     String originalRow = String.join("|", line);
                     // 检查必要字段是否完整
@@ -218,6 +224,8 @@ public class ImportService {
 
         int total = 0;
         int imported = 0;
+        long processedBytes = 0;
+        long totalBytes = file.getSize();
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
         List<Integer> validLines = new ArrayList<>();
@@ -239,11 +247,15 @@ public class ImportService {
                         "L_SHIPMODE, L_COMMENT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 while ((line = reader.readNext()) != null) {
-                    if (total % UPLOAD_INTERVAL == 0) {
-                        progressService.updateProgress(taskId, total, imported);
-                    }
                     lineNumber++;
                     total++;
+
+                    if (total % UPLOAD_INTERVAL == 0) {
+                        progressService.updateProgress(taskId, total, imported, totalBytes, processedBytes);
+                    }
+                    String row = String.join("|", line);
+                    processedBytes += row.getBytes(StandardCharsets.UTF_8).length
+                            + System.lineSeparator().getBytes(StandardCharsets.UTF_8).length;
 
                     String originalRow = String.join("|", line);
                     if (line.length < 16) {

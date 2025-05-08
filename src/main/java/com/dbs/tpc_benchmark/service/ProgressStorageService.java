@@ -25,12 +25,14 @@ public class ProgressStorageService {
     }
 
     @Transactional
-    public void updateProgress(String taskId, long totalLines, long processedLines) {
+    public void updateProgress(String taskId, long totalLines, long processedLines, long totalBytes, long processedBytes) {
         ProgressVO progressVO = progressMap.get(taskId);
         if (progressVO != null) {
             progressVO.setTotalLines(totalLines);
             progressVO.setProcessedLines(processedLines);
-            progressVO.setPercentage(Math.ceil((double) processedLines / totalLines * 100));
+            progressVO.setTotalBytes(totalBytes);
+            progressVO.setProcessedBytes(processedBytes);
+            progressVO.setPercentage(Math.ceil((double) processedBytes / totalBytes * 100));
         }
     }
 

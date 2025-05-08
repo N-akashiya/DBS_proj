@@ -10,6 +10,8 @@ public class ProgressVO {
     private String tableName;
     private long totalLines;
     private long processedLines;
+    private long totalBytes;
+    private long processedBytes;
     private double percentage;
     private String status;
 }
