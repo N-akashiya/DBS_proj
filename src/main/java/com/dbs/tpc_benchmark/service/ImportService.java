@@ -3,21 +3,21 @@ package com.dbs.tpc_benchmark.service;
 import com.dbs.tpc_benchmark.repository.LogRepository;
 import com.dbs.tpc_benchmark.typings.entity.Log;
 import com.dbs.tpc_benchmark.typings.dto.ImportDTO;
+import com.dbs.tpc_benchmark.typings.vo.ProgressVO;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReaderBuilder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -30,13 +30,30 @@ public class ImportService {
     @Autowired
     private LogRepository logRepository;
 
+    @Autowired
+    private ProgressStorageService progressService;
+
     @Value("${import.log.path:logs}")
     private String logBasePath;
 
     private static final int BATCH_SIZE = 50;
-    
+
+    private static final int UPLOAD_INTERVAL = 500;
+
+    @Async("importTaskExecutor")
+    public void asyncImportData(ImportDTO importDTO, String taskId) {
+        Map<String, Object> res = importData(importDTO, taskId);
+        try {
+            ProgressVO vo = progressService.getProgress(taskId);
+            boolean success = (Boolean) res.get("success");
+            vo.setStatus(success ? "COMPLETED" : "FAILED");
+        } catch (Exception e) {
+            progressService.getProgress(taskId).setStatus("FAILED");
+        }
+    }
+
     @Transactional
-    public Map<String, Object> importData(ImportDTO importDTO) {
+    public Map<String, Object> importData(ImportDTO importDTO, String taskId) {
         Map<String, Object> res = new HashMap<>();
 
         String tableName = importDTO.getTableName();
@@ -68,10 +85,10 @@ public class ImportService {
 
             switch (tableName) {
             case "ORDERS":
-                import_res = importOrdersData(file, startTime, logWriter, LogPath);
+                import_res = importOrdersData(file, startTime, logWriter, LogPath, taskId);
                 break;
             case "LINEITEM":
-                import_res = importLineItemData(file, startTime, logWriter, LogPath);
+                import_res = importLineItemData(file, startTime, logWriter, LogPath, taskId);
                 break;
             default:
                 logWriter.write("Unsupported table name: " + tableName + "\n");
@@ -93,11 +110,11 @@ public class ImportService {
         }
     }
 
-    private Map<String, Object> importOrdersData(MultipartFile file, long startTime, BufferedWriter logWriter, String logPath) throws Exception {
+    private Map<String, Object> importOrdersData(MultipartFile file, long startTime, BufferedWriter logWriter, String logPath, String taskId) throws Exception {
         Map<String, Object> res = new HashMap<>();
 
-        int total = 0;
-        int imported = 0;
+        int total = 0; // 读到的行数
+        int imported = 0; // 读到的行数中有效的行数
         List<Integer> errorLines = new ArrayList<>();
         List<Object[]> batchParams = new ArrayList<>();
         List<Integer> validLines = new ArrayList<>();
@@ -118,9 +135,12 @@ public class ImportService {
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 while ((line = reader.readNext()) != null) {
+                    if (total % UPLOAD_INTERVAL == 0) {
+                        progressService.updateProgress(taskId, total, imported);
+                    }
                     lineNumber++;
                     total++;
-                    
+
                     String originalRow = String.join("|", line);
                     // 检查必要字段是否完整
                     if (line.length < 9) {
@@ -193,7 +213,7 @@ public class ImportService {
         return res;
     }
 
-    private Map<String, Object> importLineItemData(MultipartFile file, long startTime, BufferedWriter logWriter, String logPath) throws Exception {
+    private Map<String, Object> importLineItemData(MultipartFile file, long startTime, BufferedWriter logWriter, String logPath, String taskId) throws Exception {
         Map<String, Object> res = new HashMap<>();
 
         int total = 0;
@@ -219,11 +239,13 @@ public class ImportService {
                         "L_SHIPMODE, L_COMMENT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 while ((line = reader.readNext()) != null) {
+                    if (total % UPLOAD_INTERVAL == 0) {
+                        progressService.updateProgress(taskId, total, imported);
+                    }
                     lineNumber++;
                     total++;
 
                     String originalRow = String.join("|", line);
-                    
                     if (line.length < 16) {
                         errorLines.add(lineNumber);
                         logWriter.write(lineNumber + ",\"" + originalRow + "\", the number of fields is less than 16\n");

@@ -2,22 +2,26 @@ package com.dbs.tpc_benchmark.controller;
 
 import com.dbs.tpc_benchmark.config.Result;
 import com.dbs.tpc_benchmark.service.ImportService;
+import com.dbs.tpc_benchmark.service.ProgressStorageService;
 import com.dbs.tpc_benchmark.typings.dto.ImportDTO;
 import com.dbs.tpc_benchmark.typings.vo.ImportResultVO;
 
+import com.dbs.tpc_benchmark.typings.vo.ProgressVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.Map;
 
 @RestController
 @RequestMapping("/import")
 public class ImportController {
     @Autowired
     private ImportService importService;
+
+    @Autowired
+    private ProgressStorageService progressStorageService;
 
     @PostMapping("/data")
     public Result<ImportResultVO> importData(@RequestParam("tableName") String tableName, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
@@ -33,21 +37,23 @@ public class ImportController {
         ImportDTO importDTO = new ImportDTO();
         importDTO.setTableName(tableName);
         importDTO.setFile(file);
-        
-        Map<String, Object> res = importService.importData(importDTO);
-        boolean success = (boolean) res.get("success");
-        String message = (String) res.get("message");
-        
-        if (success) {
-            ImportResultVO vo = ImportResultVO.builder()
-                    .tableName((String) res.get("tableName"))
-                    .totalRecords((int) res.get("totalRecords"))
-                    .importedRecords((int) res.get("importedRecords"))
-                    .build();
-            
-            return Result.success(vo, message);
-        } else {
-            return Result.error(message);
+        String taskId = progressStorageService.createTask(tableName);
+
+        ImportResultVO vo = ImportResultVO.builder()
+                .tableName(tableName)
+                .taskId(taskId)
+                .build();
+
+        importService.asyncImportData(importDTO, taskId);
+        return Result.success(vo, "导入任务已提交");
+    }
+
+    @GetMapping("/progress")
+    public Result<ProgressVO> getImportProgress(@RequestParam String taskId) {
+        ProgressVO vo = progressStorageService.getProgress(taskId);
+        if (vo == null) {
+            return Result.error("Invalid task ID");
         }
+        return Result.success(vo, "查询进度");
     }
 }

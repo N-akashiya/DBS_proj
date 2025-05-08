@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class ImportResultVO {
     private String tableName;
-    private int totalRecords;
-    private int importedRecords;
+    private String taskId;
+//    private int totalRecords;
+//    private int importedRecords;
 }
