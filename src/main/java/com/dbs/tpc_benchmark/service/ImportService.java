@@ -114,7 +114,7 @@ public class ImportService {
         Map<String, Object> res = new HashMap<>();
 
         int total = 0; // 读到的行数
-        int imported = 0; // 读到的行数中有效的行数
+        int imported = 0; // 成功导入的行数
         long processedBytes = 0;
         long totalBytes = file.getSize();
         List<Integer> errorLines = new ArrayList<>();

@@ -1,6 +1,5 @@
 package com.dbs.tpc_benchmark.service;
 
-import com.dbs.tpc_benchmark.controller.ImportController;
 import com.dbs.tpc_benchmark.mapper.TableMapper;
 import com.dbs.tpc_benchmark.typings.dto.TableCreateDTO;
 import com.dbs.tpc_benchmark.typings.dto.ColumnDTO;
