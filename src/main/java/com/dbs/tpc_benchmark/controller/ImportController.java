@@ -56,4 +56,14 @@ public class ImportController {
         }
         return Result.success(vo, "查询进度");
     }
+
+    @PostMapping("/remove-task")
+    public Result<ImportResultVO> removeTask(@RequestParam("taskId") String taskId) {
+        String tableName = progressStorageService.removeTask(taskId);
+        if (tableName != null) {
+            return Result.success(null, tableName);
+        } else {
+            return Result.error("Invalid task ID");
+        }
+    }
 }

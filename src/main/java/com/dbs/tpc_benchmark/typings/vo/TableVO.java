@@ -8,4 +8,6 @@ import lombok.Data;
 public class TableVO {
     private String tablename;
     private String lastupdate;
+    @Builder.Default
+    private ProgressVO progressVO = null;
 }

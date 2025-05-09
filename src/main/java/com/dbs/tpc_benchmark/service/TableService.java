@@ -1,9 +1,11 @@
 package com.dbs.tpc_benchmark.service;
 
+import com.dbs.tpc_benchmark.controller.ImportController;
 import com.dbs.tpc_benchmark.mapper.TableMapper;
 import com.dbs.tpc_benchmark.typings.dto.TableCreateDTO;
 import com.dbs.tpc_benchmark.typings.dto.ColumnDTO;
 import com.dbs.tpc_benchmark.typings.constant.ColumnType;
+import com.dbs.tpc_benchmark.typings.vo.ProgressVO;
 import com.dbs.tpc_benchmark.typings.vo.TableVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ import java.util.*;
 public class TableService {
     @Autowired
     private TableMapper tableMapper;
+    @Autowired
+    private ProgressStorageService progressStorageService;
 
     @Transactional
     public Map<String, Object> createTable(TableCreateDTO tableCreateDTO) {
@@ -166,7 +170,7 @@ public class TableService {
         
         for (String tableName : tableNames) {
             Map<String, Object> tableInfo = tableMapper.getTableInfo(tableName);
-            
+            ProgressVO progressVO = progressStorageService.findProcessingProgressByTableName(tableName);
             Date updateTime = null;
             if (tableInfo.get("update_time") instanceof Date) {
                 updateTime = (Date) tableInfo.get("update_time");
@@ -178,7 +182,9 @@ public class TableService {
                     .tablename(tableName)
                     .lastupdate(lastUpdate)
                     .build();
-            
+            if (progressVO != null) {
+                vo.setProgressVO(progressVO);
+            }
             tables.add(vo);
         }
         

@@ -25,6 +25,16 @@ public class ProgressStorageService {
     }
 
     @Transactional
+    public String removeTask(String taskId) {
+        ProgressVO progressVO = progressMap.remove(taskId);
+        if (progressVO != null) {
+            return progressVO.getTableName();
+        } else {
+            return null;
+        }
+    }
+
+    @Transactional
     public void updateProgress(String taskId, long totalLines, long processedLines, long totalBytes, long processedBytes) {
         ProgressVO progressVO = progressMap.get(taskId);
         if (progressVO != null) {
@@ -39,5 +49,14 @@ public class ProgressStorageService {
     @Transactional
     public ProgressVO getProgress(String taskId) {
         return progressMap.getOrDefault(taskId, null);
+    }
+
+    public ProgressVO findProcessingProgressByTableName(String tableName) {
+        tableName = tableName.toUpperCase();
+        String finalTableName = tableName;
+        return progressMap.values().stream()
+                .filter(vo -> vo != null && finalTableName.equals(vo.getTableName()))
+                .findFirst()
+                .orElse(null);
     }
 }
