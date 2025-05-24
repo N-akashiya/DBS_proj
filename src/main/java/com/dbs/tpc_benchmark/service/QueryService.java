@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class QueryService {
@@ -26,5 +27,14 @@ public class QueryService {
                 .currentPage(clientInfoDTO.getCurrentPage())
                 .pageSize(clientInfoDTO.getPageSize())
                 .build();
+    }
+
+    @Transactional
+    public List<Map<String, Object>> getData(String tableName) {
+        List<String> allowedTables = List.of("ORDERS", "REGION", "NATION", "SUPPLIER", "PART", "PARTSUPP", "CUSTOMER", "LINEITEM");
+        if (!allowedTables.contains(tableName.toUpperCase())) {
+            throw new IllegalArgumentException("invalid table name: " + tableName);
+        }
+        return tableMapper.getAllFromTable(tableName);
     }
 }

@@ -58,7 +58,7 @@ public interface TableMapper {
             "<if test='nationKeyword != null and nationKeyword != \"\"'>",
             "AND n.N_NAME LIKE CONCAT('%', #{nationKeyword}, '%') ",
             "</if>",
-
+            "ORDER BY c.C_CUSTKEY ASC",
             "LIMIT #{pageSize} OFFSET #{offset} ",
             "</script>"
     })
@@ -84,4 +84,11 @@ public interface TableMapper {
     })
     int countClientInfo(@Param("nameKeyword") String nameKeyword,
                         @Param("nationKeyword") String nationKeyword);
+
+    @Select({
+            "<script>",
+            "SELECT * FROM ${tableName}",
+            "</script>"
+    })
+    List<Map<String, Object>> getAllFromTable(@Param("tableName") String tableName);
 }
