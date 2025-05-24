@@ -4,8 +4,10 @@ import com.dbs.tpc_benchmark.config.Result;
 import com.dbs.tpc_benchmark.service.QueryService;
 import com.dbs.tpc_benchmark.typings.dto.ClientInfoDTO;
 import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
-import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
 import com.dbs.tpc_benchmark.typings.dto.ShipPriorDTO;
+import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
+import com.dbs.tpc_benchmark.typings.dto.SmallOrderDTO;
+import com.dbs.tpc_benchmark.typings.vo.SmallOrderVO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -42,4 +44,21 @@ public class QueryController {
             return Result.error("Invalid query");
         return Result.success(shipPriorVO, "Query success");
     }
+
+    @PostMapping("/small-order")
+    public Result<SmallOrderVO> getSmallOrder(@RequestBody SmallOrderDTO smallOrderDTO) {
+        // 参数验证
+        if (smallOrderDTO.getBrand() == null)
+            return Result.error("Brand is required");
+        if (smallOrderDTO.getContainer() == null)
+            return Result.error("Container is required");
+        if (smallOrderDTO.getYears() == null)
+            smallOrderDTO.setYears(7);
+        
+        SmallOrderVO smallOrderVO = queryService.getSmallOrder(smallOrderDTO);
+        if (smallOrderVO == null) 
+            return Result.error("Invalid query");
+        return Result.success(smallOrderVO, "Query success");
+    }
+
 }

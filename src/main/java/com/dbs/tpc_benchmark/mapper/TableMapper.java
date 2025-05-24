@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -96,13 +97,11 @@ public interface TableMapper {
         "o.O_ORDERDATE as orderDate, ",
         "o.O_SHIPPRIORITY as shipPriority ",
         "FROM ",
-        "CUSTOMER c, ",
-        "ORDERS o, ",
-        "LINEITEM l ",
+        "CUSTOMER c ",
+        "JOIN ORDERS o ON c.C_CUSTKEY = o.O_CUSTKEY ",
+        "JOIN LINEITEM l ON l.L_ORDERKEY = o.O_ORDERKEY ",
         "WHERE ",
         "c.C_MKTSEGMENT = #{marketSegment} ",
-        "AND c.C_CUSTKEY = o.O_CUSTKEY ",
-        "AND l.L_ORDERKEY = o.O_ORDERKEY ",
         "AND o.O_ORDERDATE < #{orderDateBefore} ",
         "AND l.L_SHIPDATE > #{shipDateAfter} ",
         "GROUP BY ",
@@ -119,6 +118,31 @@ public interface TableMapper {
         @Param("orderDateBefore") LocalDate orderDateBefore,
         @Param("shipDateAfter") LocalDate shipDateAfter,
         @Param("orderlimit") Integer orderlimit
+    );
+
+    // SmallOrder
+    @Select({
+        "SELECT ",
+        "SUM(l.L_EXTENDEDPRICE) / #{years} AS avgrevenue ",
+        "FROM ",
+        "LINEITEM l ",
+        "JOIN PART p ON p.P_PARTKEY = l.L_PARTKEY ",
+        "WHERE ",
+        "p.P_BRAND = #{brand} ",
+        "AND p.P_CONTAINER = #{container} ",
+        "AND l.L_QUANTITY < ( ",
+        "   SELECT ",
+        "   0.2 * AVG(l2.L_QUANTITY) ",
+        "   FROM ",
+        "   LINEITEM l2 ",
+        "   WHERE ",
+        "   l2.L_PARTKEY = p.P_PARTKEY ",
+        ")"
+    })
+    BigDecimal getSmallOrderQuery(
+        @Param("brand") String brand,
+        @Param("container") String container,
+        @Param("years") Integer years
     );
 
 }
