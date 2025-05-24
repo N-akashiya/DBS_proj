@@ -2,8 +2,12 @@ package com.dbs.tpc_benchmark.service;
 
 import com.dbs.tpc_benchmark.mapper.TableMapper;
 import com.dbs.tpc_benchmark.typings.dto.ClientInfoDTO;
+import com.dbs.tpc_benchmark.typings.dto.ShipPriorDTO;
 import com.dbs.tpc_benchmark.typings.tableList.ClientInfo;
+import com.dbs.tpc_benchmark.typings.tableList.OrderRevenue;
 import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
+import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
+
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,5 +30,22 @@ public class QueryService {
                 .currentPage(clientInfoDTO.getCurrentPage())
                 .pageSize(clientInfoDTO.getPageSize())
                 .build();
+    }
+
+    @Transactional
+    public ShipPriorVO getShipPrior(ShipPriorDTO dto) {
+        if (dto.getMarketSegment() == null || dto.getOrderDateBefore() == null || dto.getShipDateAfter() == null)
+            return null;
+        Integer limit = dto.getOrderlimit() != null ? dto.getOrderlimit() : 10;
+        List<OrderRevenue> orders = tableMapper.getShipPriorQuery(
+            dto.getMarketSegment(),
+            dto.getOrderDateBefore(),
+            dto.getShipDateAfter(),
+            limit
+        );
+        return ShipPriorVO.builder()
+            .orders(orders)
+            .count(orders != null ? orders.size() : 0)
+            .build();
     }
 }

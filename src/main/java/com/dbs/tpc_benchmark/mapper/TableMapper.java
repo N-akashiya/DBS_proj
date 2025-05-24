@@ -1,11 +1,14 @@
 package com.dbs.tpc_benchmark.mapper;
 
 import com.dbs.tpc_benchmark.typings.tableList.ClientInfo;
-import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
+import com.dbs.tpc_benchmark.typings.tableList.OrderRevenue;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDate;
 import java.util.*;
 
 @Mapper
@@ -84,4 +87,38 @@ public interface TableMapper {
     })
     int countClientInfo(@Param("nameKeyword") String nameKeyword,
                         @Param("nationKeyword") String nationKeyword);
+
+    // ShipPrior
+    @Select({
+        "SELECT ",
+        "l.L_ORDERKEY as orderKey, ",
+        "SUM(l.L_EXTENDEDPRICE * (1 - l.L_DISCOUNT)) as revenue, ",
+        "o.O_ORDERDATE as orderDate, ",
+        "o.O_SHIPPRIORITY as shipPriority ",
+        "FROM ",
+        "CUSTOMER c, ",
+        "ORDERS o, ",
+        "LINEITEM l ",
+        "WHERE ",
+        "c.C_MKTSEGMENT = #{marketSegment} ",
+        "AND c.C_CUSTKEY = o.O_CUSTKEY ",
+        "AND l.L_ORDERKEY = o.O_ORDERKEY ",
+        "AND o.O_ORDERDATE < #{orderDateBefore} ",
+        "AND l.L_SHIPDATE > #{shipDateAfter} ",
+        "GROUP BY ",
+        "l.L_ORDERKEY, ",
+        "o.O_ORDERDATE, ",
+        "o.O_SHIPPRIORITY ",
+        "ORDER BY ",
+        "revenue DESC, ",
+        "o.O_ORDERDATE ",
+        "LIMIT #{orderlimit}"
+    })
+    List<OrderRevenue> getShipPriorQuery(
+        @Param("marketSegment") String marketSegment,
+        @Param("orderDateBefore") LocalDate orderDateBefore,
+        @Param("shipDateAfter") LocalDate shipDateAfter,
+        @Param("orderlimit") Integer orderlimit
+    );
+
 }

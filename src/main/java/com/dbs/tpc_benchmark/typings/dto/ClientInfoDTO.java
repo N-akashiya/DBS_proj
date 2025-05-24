@@ -1,6 +1,5 @@
 package com.dbs.tpc_benchmark.typings.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
 @Data
