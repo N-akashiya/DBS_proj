@@ -1,12 +1,16 @@
 package com.dbs.tpc_benchmark.typings.vo;
 
+import com.dbs.tpc_benchmark.typings.tableList.ClientInfo;
+import lombok.Builder;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@Builder
 public class ClientInfoVO {
-    private int cuskey;
-    private String name;
-    private String address;
-    private String nation;
-    private String phone;
-    private float acctbal;
-    private String mktsegment;
-    private String comment;
+    private List<ClientInfo> clientInfoList;
+    private int total;
+    private int currentPage;
+    private int pageSize;
 }
