@@ -10,7 +10,6 @@ import com.dbs.tpc_benchmark.typings.dto.SmallOrderDTO;
 import com.dbs.tpc_benchmark.typings.vo.SmallOrderVO;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
