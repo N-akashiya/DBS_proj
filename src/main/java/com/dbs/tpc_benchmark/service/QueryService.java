@@ -7,7 +7,6 @@ import com.dbs.tpc_benchmark.typings.dto.SmallOrderDTO;
 import com.dbs.tpc_benchmark.typings.tableList.ClientInfo;
 import com.dbs.tpc_benchmark.typings.tableList.OrderRevenue;
 import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
-import com.dbs.tpc_benchmark.typings.vo.NewOrderVO;
 import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
 import com.dbs.tpc_benchmark.typings.vo.SmallOrderVO;
 
@@ -79,8 +78,5 @@ public class QueryService {
         }
         return tableMapper.getAllFromTable(tableName);
     }
-
-    // TPC-C
-    
 
 }

@@ -29,6 +29,7 @@ public class NewOrderVO {
         private int quantity;
         private BigDecimal amount;
         private String stockStatus;
+        private String brand;
     }
     
     @Data
