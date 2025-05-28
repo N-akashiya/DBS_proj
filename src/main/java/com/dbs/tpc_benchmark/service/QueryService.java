@@ -72,7 +72,13 @@ public class QueryService {
 
     @Transactional
     public List<Map<String, Object>> getData(String tableName) {
-        List<String> allowedTables = List.of("ORDERS", "REGION", "NATION", "SUPPLIER", "PART", "PARTSUPP", "CUSTOMER", "LINEITEM");
+        List<String> allowedTables = List.of(
+            // tpc-h
+            "ORDERS", "REGION", "NATION", "SUPPLIER", "PART", "PARTSUPP", "CUSTOMER", "LINEITEM",
+            // tpc-c
+            "C_WAREHOUSE", "C_DISTRICT", "C_CUSTOMER", "C_HISTORY", "C_ORDERS", "C_NEW_ORDER", 
+            "C_ORDER_LINE", "C_STOCK", "C_ITEM"
+            );
         if (!allowedTables.contains(tableName.toUpperCase())) {
             throw new IllegalArgumentException("invalid table name: " + tableName);
         }
