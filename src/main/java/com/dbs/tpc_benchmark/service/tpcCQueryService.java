@@ -469,16 +469,5 @@ public class tpcCQueryService {
             // 回滚事务并抛出异常
             throw new RuntimeException("支付事务处理失败: " + e.getMessage(), e);
         }
-    } 
-
-    public Map<String, Object> getExecutionPlan(String sql, String transactionType) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("sql", sql);
-        result.put("transactionType", transactionType);
-
-        List<Map<String, Object>> planDetails = jdbcTemplate.queryForList("EXPLAIN " + sql);
-        result.put("plan", planDetails);
-        
-        return result;
     }
 }

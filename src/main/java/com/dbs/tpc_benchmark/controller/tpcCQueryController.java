@@ -10,8 +10,6 @@ import com.dbs.tpc_benchmark.typings.vo.PaymentVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/tpcc")
 public class tpcCQueryController {
@@ -37,19 +35,6 @@ public class tpcCQueryController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("支付事务处理失败: " + e.getMessage());
-        }
-    }
-    
-    @GetMapping("/execution-plan")
-    public Result<Map<String, Object>> getExecutionPlan(
-            @RequestParam String sql,
-            @RequestParam(required=false, defaultValue="new-order") String transactionType) {
-        try {
-            Map<String, Object> plan = tpccQueryService.getExecutionPlan(sql, transactionType);
-            return Result.success(plan, "获取执行计划成功");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error("获取执行计划失败: " + e.getMessage());
         }
     }
 }
