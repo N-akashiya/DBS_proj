@@ -3,6 +3,11 @@ package com.dbs.tpc_benchmark.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.dbs.tpc_benchmark.typings.tableList.ClientInfo;
+import com.dbs.tpc_benchmark.typings.tableList.OrderRevenue;
+import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
+import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -59,12 +64,61 @@ public class ExportService {
         return filePath;
     }
     
+    public String exportClientInfo(ClientInfoVO clientInfoVO, String exportPath) throws Exception {
+        if (!verifyExportPath(exportPath)) {
+            throw new IllegalArgumentException("Invalid export path: " + exportPath);
+        }
+
+        String fileName = "client_info_" + System.currentTimeMillis() + ".csv";
+        String filePath = new File(exportPath, fileName).getAbsolutePath();
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            // 表头
+            writer.write("Name,Address,Nation");
+            writer.newLine();
+            // 数据
+            for (ClientInfo clientInfo : clientInfoVO.getClientInfoList()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(escapeField(clientInfo.getName())).append(",");
+                sb.append(escapeField(clientInfo.getAddress())).append(",");
+                sb.append(escapeField(clientInfo.getNationName()));
+                writer.write(sb.toString());
+                writer.newLine();
+            }
+        }
+        return filePath;
+    }
+
+    public String exportShipPrior(ShipPriorVO shipPriorVO, String exportPath) throws Exception {
+        if (!verifyExportPath(exportPath)) {
+            throw new IllegalArgumentException("Invalid export path: " + exportPath);
+        }
+
+        String fileName = "ship_prior_" + System.currentTimeMillis() + ".csv";
+        String filePath = new File(exportPath, fileName).getAbsolutePath();
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            // 表头
+            writer.write("OrderKey,Revenue,Order Date,ShipPriority");
+            writer.newLine();
+            // 数据
+            for (OrderRevenue order : shipPriorVO.getOrders()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(escapeField(order.getOrderKey())).append(",");
+                sb.append(escapeField(order.getRevenue())).append(",");
+                sb.append(escapeField(order.getOrderDate())).append(",");
+                sb.append(escapeField(order.getShipPriority()));
+                writer.write(sb.toString());
+                writer.newLine();
+            }
+        }
+        return filePath;
+    }
+
     private String escapeField(Object field) {
         if (field == null)
             return "";
-        
         String value = String.valueOf(field);
-        
         // 如果字段包含逗号、引号或换行符，需要用引号包围并转义内部引号
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";

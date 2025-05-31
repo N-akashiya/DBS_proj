@@ -2,6 +2,9 @@ package com.dbs.tpc_benchmark.controller;
 
 import com.dbs.tpc_benchmark.config.Result;
 import com.dbs.tpc_benchmark.service.ExportService;
+import com.dbs.tpc_benchmark.typings.vo.ClientInfoVO;
+import com.dbs.tpc_benchmark.typings.vo.ShipPriorVO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -35,6 +38,50 @@ public class ExportController {
             @RequestParam String exportPath) {
         try {
             String filePath = exportService.exportTableToCsv(tableName, exportPath);
+            File file = new File(filePath);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE);
+            
+            FileSystemResource resource = new FileSystemResource(file);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/client-info")
+    public ResponseEntity<Resource> exportClientInfo(
+            @RequestBody ClientInfoVO clientInfoVO,
+            @RequestParam String exportPath) {
+        try {
+            String filePath = exportService.exportClientInfo(clientInfoVO, exportPath);
+            File file = new File(filePath);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE);
+            
+            FileSystemResource resource = new FileSystemResource(file);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/shipping-priority")
+    public ResponseEntity<Resource> exportShipPrior(
+            @RequestBody ShipPriorVO shipPriorVO,
+            @RequestParam String exportPath) {
+        try {
+            String filePath = exportService.exportShipPrior(shipPriorVO, exportPath);
             File file = new File(filePath);
             
             HttpHeaders headers = new HttpHeaders();
