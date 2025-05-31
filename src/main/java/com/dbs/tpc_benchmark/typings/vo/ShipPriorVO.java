@@ -11,4 +11,8 @@ import java.util.List;
 public class ShipPriorVO {
     private List<OrderRevenue> orders;
     private int count;
+
+    private long executionTimeMs;
+    private double throughputQPS;
+    private double avgLatencyMs;
 }

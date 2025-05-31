@@ -9,4 +9,7 @@ import lombok.Data;
 @Builder
 public class SmallOrderVO {
     private BigDecimal avgrevenue;
+    private long executionTimeMs;
+    private double throughputQPS;
+    private double avgLatencyMs;
 }

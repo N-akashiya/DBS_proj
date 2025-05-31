@@ -53,15 +53,6 @@ public class DBManageService {
         if (!tableInfos.isEmpty()) {
             result.put("tableInfo", tableInfos.get(0));
             
-            // 列
-            String columnSql = "SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, " +
-                    "COLUMN_KEY, COLUMN_DEFAULT, EXTRA " +
-                    "FROM information_schema.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
-                    "ORDER BY ORDINAL_POSITION";
-            List<Map<String, Object>> columnInfos = jdbcTemplate.queryForList(columnSql, schemaName, tableName);
-            result.put("columns", columnInfos);
-            
             // 索引
             String indexSql = "SELECT INDEX_NAME, COLUMN_NAME, NON_UNIQUE, " +
                     "SEQ_IN_INDEX, CARDINALITY " +

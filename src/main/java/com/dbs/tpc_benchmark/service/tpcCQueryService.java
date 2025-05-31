@@ -20,6 +20,10 @@ public class tpcCQueryService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private final long serviceStartTime = System.currentTimeMillis();
+    private int tpccQueryCount = 0;
+    private long totalExecutionTimeMs = 0;
+
     // TPC-C新订单事务
     @Transactional
     public NewOrderVO processNewOrder(NewOrderDTO newOrderDTO) {
@@ -249,7 +253,14 @@ public class tpcCQueryService {
                 }
             }
             
-            long totalExecutionTime = System.currentTimeMillis() - startTime;
+            long executionTimeMs = System.currentTimeMillis() - startTime;
+            synchronized (this) {
+                tpccQueryCount++;
+                totalExecutionTimeMs += executionTimeMs;
+            }
+            long uptimeSeconds = (System.currentTimeMillis() - serviceStartTime) / 1000;
+            double throughputQPS = uptimeSeconds > 0 ? (double) tpccQueryCount / uptimeSeconds : 0;
+            double avgLatencyMs = tpccQueryCount > 0 ? (double) totalExecutionTimeMs / tpccQueryCount : 0;
             
             // 返回结果
             return NewOrderVO.builder()
@@ -260,7 +271,9 @@ public class tpcCQueryService {
                 .entryDate(now)
                 .totalAmount(totalAmount)
                 .items(orderItemDetails)
-                .executionTimeMs(totalExecutionTime)
+                .executionTimeMs(executionTimeMs)
+                .throughputQPS(throughputQPS)
+                .avgLatencyMs(avgLatencyMs)
                 .sqlDetails(sqlDetails)
                 .build();
             
@@ -447,7 +460,14 @@ public class tpcCQueryService {
                 .executionTimeMs(System.currentTimeMillis() - sqlStartTime)
                 .build());
                 
-            long totalExecutionTime = System.currentTimeMillis() - startTime;
+            long executionTimeMs = System.currentTimeMillis() - startTime;
+            synchronized (this) {
+                tpccQueryCount++;
+                totalExecutionTimeMs += executionTimeMs;
+            }
+            long uptimeSeconds = (System.currentTimeMillis() - serviceStartTime) / 1000;
+            double throughputQPS = uptimeSeconds > 0 ? (double) tpccQueryCount / uptimeSeconds : 0;
+            double avgLatencyMs = tpccQueryCount > 0 ? (double) totalExecutionTimeMs / tpccQueryCount : 0;
             
             // 返回结果
             return PaymentVO.builder()
@@ -461,7 +481,9 @@ public class tpcCQueryService {
                 .paymentAmount(paymentAmount)
                 .customerBalanceBeforePayment(customerBalance)
                 .customerBalanceAfterPayment(newBalance)
-                .executionTimeMs(totalExecutionTime)
+                .executionTimeMs(executionTimeMs)
+                .throughputQPS(throughputQPS)
+                .avgLatencyMs(avgLatencyMs)
                 .sqlDetails(sqlDetails)
                 .build();
                 

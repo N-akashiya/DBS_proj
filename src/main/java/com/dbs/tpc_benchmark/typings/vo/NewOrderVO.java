@@ -18,6 +18,8 @@ public class NewOrderVO {
     private BigDecimal totalAmount;
     private List<OrderItemDetailVO> items;
     private long executionTimeMs;
+    private double throughputQPS;
+    private double avgLatencyMs;
     private List<SqlExecutionDetail> sqlDetails;
     
     @Data

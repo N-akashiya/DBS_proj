@@ -21,6 +21,8 @@ public class PaymentVO {
     private BigDecimal customerBalanceBeforePayment;
     private BigDecimal customerBalanceAfterPayment;
     private long executionTimeMs;
+    private double throughputQPS;
+    private double avgLatencyMs;
     private List<SqlExecutionDetail> sqlDetails;
     
     @Data

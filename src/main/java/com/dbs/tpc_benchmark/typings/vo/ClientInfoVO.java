@@ -13,4 +13,8 @@ public class ClientInfoVO {
     private int total;
     private int currentPage;
     private int pageSize;
+
+    private long executionTimeMs;   // 执行时间
+    private double throughputQPS;   // 吞吐量
+    private double avgLatencyMs;    // 平均延迟
 }
