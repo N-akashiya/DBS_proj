@@ -57,6 +57,8 @@ public class QueryService {
 
     @Transactional
     public ShipPriorVO getShipPrior(ShipPriorDTO dto) {
+        long startTime = System.currentTimeMillis();
+
         if (dto.getMarketSegment() == null || dto.getOrderDateBefore() == null || dto.getShipDateAfter() == null)
             return null;
         Integer limit = dto.getOrderlimit() != null ? dto.getOrderlimit() : 10;
@@ -66,14 +68,29 @@ public class QueryService {
             dto.getShipDateAfter(),
             limit
         );
+
+        long executionTimeMs = System.currentTimeMillis() - startTime;
+        synchronized (this) {
+            tpchQueryCount++;
+            totalExecutionTimeMs += executionTimeMs;
+        }
+        long uptimeSeconds = (System.currentTimeMillis() - serviceStartTime) / 1000;
+        double throughputQPS = uptimeSeconds > 0 ? (double) tpchQueryCount / uptimeSeconds : 0;
+        double avgLatencyMs = tpchQueryCount > 0 ? (double) totalExecutionTimeMs / tpchQueryCount : 0;
+
         return ShipPriorVO.builder()
             .orders(orders)
             .count(orders != null ? orders.size() : 0)
+            .executionTimeMs(executionTimeMs)
+            .throughputQPS(throughputQPS)
+            .avgLatencyMs(avgLatencyMs)
             .build();
     }
 
     @Transactional
     public SmallOrderVO getSmallOrder(SmallOrderDTO dto) {
+        long startTime = System.currentTimeMillis();
+
         if (dto.getBrand() == null || dto.getContainer() == null)
             return null;
         Integer years = dto.getYears() != null ? dto.getYears() : 7;
@@ -84,8 +101,21 @@ public class QueryService {
         );
         if (avgrevenue == null)
             avgrevenue = BigDecimal.ZERO;
+
+        long executionTimeMs = System.currentTimeMillis() - startTime;
+        synchronized (this) {
+            tpchQueryCount++;
+            totalExecutionTimeMs += executionTimeMs;
+        }
+        long uptimeSeconds = (System.currentTimeMillis() - serviceStartTime) / 1000;
+        double throughputQPS = uptimeSeconds > 0 ? (double) tpchQueryCount / uptimeSeconds : 0;
+        double avgLatencyMs = tpchQueryCount > 0 ? (double) totalExecutionTimeMs / tpchQueryCount : 0;
+        
         return SmallOrderVO.builder()
             .avgrevenue(avgrevenue)
+            .executionTimeMs(executionTimeMs)
+            .throughputQPS(throughputQPS)
+            .avgLatencyMs(avgLatencyMs)
             .build();
     }
 
