@@ -1,5 +1,6 @@
 package com.dbs.tpc_benchmark.service;
 
+import com.dbs.tpc_benchmark.typings.dto.ClientInfoDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -71,13 +72,19 @@ public class ExportService {
 
         String fileName = "client_info_" + System.currentTimeMillis() + ".csv";
         String filePath = new File(exportPath, fileName).getAbsolutePath();
-        
+
+        ClientInfoDTO clientInfoDTO = new ClientInfoDTO();
+        clientInfoDTO.setCurrentPage(1);
+        clientInfoDTO.setPageSize(clientInfoVO.getTotal());
+
+        ClientInfoVO newClientInfoVO = queryService.getClientInfo(clientInfoDTO);
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             // 表头
             writer.write("Name,Address,Nation");
             writer.newLine();
             // 数据
-            for (ClientInfo clientInfo : clientInfoVO.getClientInfoList()) {
+            for (ClientInfo clientInfo : newClientInfoVO.getClientInfoList()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(escapeField(clientInfo.getName())).append(",");
                 sb.append(escapeField(clientInfo.getAddress())).append(",");
