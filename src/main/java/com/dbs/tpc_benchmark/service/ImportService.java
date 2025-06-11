@@ -187,8 +187,32 @@ public class ImportService {
                         validLines.add(lineNumber);
                         
                         if (batchParams.size() >= BATCH_SIZE) {
-                            int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
-                            imported += countSuccessfulUpdates(updateCnt);
+                            try {
+                                int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                                imported += countSuccessfulUpdates(updateCnt);
+                            } catch (org.springframework.jdbc.UncategorizedSQLException e) {
+                                // 检查是否是触发器抛出的特殊错误
+                                if (e.getMessage() != null && e.getMessage().contains("ORDER_EXISTS")) {
+                                    // 为可能需要更新的记录创建UPDATE语句
+                                    for (int i = 0; i < batchParams.size(); i++) {
+                                        try {
+                                            Object[] rowParams = batchParams.get(i);
+                                            jdbcTemplate.update(
+                                                "UPDATE ORDERS SET O_CUSTKEY = ?, O_ORDERSTATUS = ?, " +
+                                                "O_TOTALPRICE = ?, O_ORDERDATE = ?, O_ORDERPRIORITY = ?, " +
+                                                "O_CLERK = ?, O_SHIPPRIORITY = ?, O_COMMENT = ? " +
+                                                "WHERE O_ORDERKEY = ?",
+                                                rowParams[1], rowParams[2], rowParams[3], rowParams[4], rowParams[5],
+                                                rowParams[6], rowParams[7], rowParams[8], rowParams[0]);
+                                            imported++;
+                                        } catch (Exception updateEx) {
+                                            logWriter.write("Failed to update existing record: " + updateEx.getMessage() + "\n");
+                                        }
+                                    }
+                                } else {// 其他SQL错误
+                                    logWriter.write("Error in batch insert: " + e.getMessage() + "\n");
+                                }
+                            }
                             batchParams.clear();
                             validLines.clear();
                         }
@@ -322,8 +346,34 @@ public class ImportService {
                         validLines.add(lineNumber);
                         
                         if (batchParams.size() >= BATCH_SIZE) {
-                            int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
-                            imported += countSuccessfulUpdates(updateCnt);
+                            try {
+                                int[] updateCnt = jdbcTemplate.batchUpdate(sql, batchParams);
+                                imported += countSuccessfulUpdates(updateCnt);
+                            } catch (org.springframework.jdbc.UncategorizedSQLException e) {
+                                if (e.getMessage() != null && e.getMessage().contains("LINEITEM_EXISTS")) {
+                                    for (int i = 0; i < batchParams.size(); i++) {
+                                        try {
+                                            Object[] rowParams = batchParams.get(i);
+                                            jdbcTemplate.update(
+                                                "UPDATE LINEITEM SET L_PARTKEY = ?, L_SUPPKEY = ?, " +
+                                                "L_QUANTITY = ?, L_EXTENDEDPRICE = ?, L_DISCOUNT = ?, " +
+                                                "L_TAX = ?, L_RETURNFLAG = ?, L_LINESTATUS = ?, " +
+                                                "L_SHIPDATE = ?, L_COMMITDATE = ?, L_RECEIPTDATE = ?, " +
+                                                "L_SHIPINSTRUCT = ?, L_SHIPMODE = ?, L_COMMENT = ? " +
+                                                "WHERE L_ORDERKEY = ? AND L_LINENUMBER = ?",
+                                                rowParams[1], rowParams[2], rowParams[4], rowParams[5], 
+                                                rowParams[6], rowParams[7], rowParams[8], rowParams[9], 
+                                                rowParams[10], rowParams[11], rowParams[12], rowParams[13], 
+                                                rowParams[14], rowParams[15], rowParams[0], rowParams[3]);
+                                            imported++;
+                                        } catch (Exception updateEx) {
+                                            logWriter.write("Failed to update existing record: " + updateEx.getMessage() + "\n");
+                                        }
+                                    }
+                                } else {
+                                    logWriter.write("Error in batch insert: " + e.getMessage() + "\n");
+                                }
+                            }
                             batchParams.clear();
                             validLines.clear();
                         }
